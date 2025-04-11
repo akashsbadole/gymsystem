@@ -190,26 +190,29 @@ async function seedSampleData() {
       
       // Only create members if the gym doesn't have many
       if (existingMembers.length < 5) {
-        // Create 15-25 members per gym
-        const memberCount = getRandomNumber(15, 25);
+        // Create 5-10 members per gym (reduced to avoid timeout)
+        const memberCount = getRandomNumber(5, 10);
         
         for (let i = 0; i < memberCount; i++) {
           const gender = getRandomElement(genders);
           const age = getRandomNumber(18, 65);
           const active = Math.random() > 0.2; // 80% active members
           
+          // Create a date of birth between 18 and 65 years ago
+          const currentDate = new Date();
+          const yearOfBirth = currentDate.getFullYear() - getRandomNumber(18, 65);
+          const monthOfBirth = getRandomNumber(0, 11);
+          const dayOfBirth = getRandomNumber(1, 28);
+          const dateOfBirth = new Date(yearOfBirth, monthOfBirth, dayOfBirth);
+          
           const member = {
             name: `Member ${i + 1} of ${gym.name}`,
             phone: `98${getRandomNumber(10000000, 99999999)}`,
             email: `member${i + 1}@example.com`,
-            address: `Member Address ${i + 1}, ${gym.address.split(',')[1].trim()}`,
+            address: `Member Address ${i + 1}, ${gym.city}`,
+            dateOfBirth: dateOfBirth,
             gender: gender,
-            age: age,
             emergencyContact: `Emergency Contact for Member ${i + 1}`,
-            emergencyPhone: `97${getRandomNumber(10000000, 99999999)}`,
-            healthInfo: `No major health issues.`,
-            joiningDate: getRandomDate(730), // in the last 2 years
-            notes: `Regular member.`,
             active: active,
             gymId: gym.id,
             createdAt: new Date(),
@@ -223,7 +226,7 @@ async function seedSampleData() {
           const gymPlans = await db.select().from(membershipPlans).where(eq(membershipPlans.gymId, gym.id));
           
           if (gymPlans.length > 0) {
-            const membershipCount = getRandomNumber(1, 3); // 1-3 memberships per member
+            const membershipCount = getRandomNumber(1, 2); // 1-2 memberships per member (reduced to avoid timeout)
             
             for (let j = 0; j < membershipCount; j++) {
               const plan = getRandomElement(gymPlans);
@@ -238,10 +241,9 @@ async function seedSampleData() {
               const membership = {
                 startDate: startDate,
                 endDate: endDate,
-                membershipPlanId: plan.id,
+                planId: plan.id,
                 memberId: newMember.id,
                 status: status,
-                notes: `Standard ${plan.name} membership.`,
                 createdAt: new Date(),
                 updatedAt: new Date()
               };
@@ -259,8 +261,8 @@ async function seedSampleData() {
                 paymentMethod: getRandomElement(['Cash', 'Card', 'UPI', 'Bank Transfer']),
                 memberId: newMember.id,
                 membershipId: newMembership.id,
-                receiptNumber: `RCPT-${getRandomNumber(10000, 99999)}`,
-                notes: `Payment for ${plan.name} membership.`,
+                reference: `RCPT-${getRandomNumber(10000, 99999)}`,
+                status: 'paid',
                 createdAt: new Date(),
                 updatedAt: new Date()
               };
@@ -279,8 +281,8 @@ async function seedSampleData() {
     console.log('\nCreating sample notifications...');
     const notificationTypes = ['membership_expiry', 'payment_reminder', 'new_promotion', 'maintenance_notice', 'staff_update'];
     
-    // Create notifications for owner
-    const ownerNotificationsCount = getRandomNumber(5, 10);
+    // Create notifications for owner (reduced count to avoid timeout)
+    const ownerNotificationsCount = getRandomNumber(3, 5);
     
     for (let i = 0; i < ownerNotificationsCount; i++) {
       const notificationType = getRandomElement(notificationTypes);
@@ -326,8 +328,8 @@ async function seedSampleData() {
     
     console.log(`Created ${ownerNotificationsCount} notifications for owner`);
 
-    // Also create some for admin
-    const adminNotificationsCount = getRandomNumber(3, 8);
+    // Also create some for admin (reduced count to avoid timeout)
+    const adminNotificationsCount = getRandomNumber(2, 4);
     
     for (let i = 0; i < adminNotificationsCount; i++) {
       const notificationType = getRandomElement(notificationTypes);
