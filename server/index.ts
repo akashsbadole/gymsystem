@@ -98,13 +98,34 @@ app.use((req, res, next) => {
   // Get port from environment variable or use default
   const port = process.env.PORT || 5000;
   
-  // Listen on all interfaces
-  server.listen({
-    port: Number(port),
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`Server running in ${process.env.NODE_ENV || 'development'} mode`);
-    log(`Listening on port ${port}`);
-  });
+  // Get host from environment variable or use default
+  // Use HOST=127.0.0.1 for local-only access, HOST=0.0.0.0 for all interfaces
+  const host = process.env.HOST || '0.0.0.0';
+  
+  try {
+    // Listen on specified host and port
+    server.listen({
+      port: Number(port),
+      host: host,
+      // Only use reusePort on platforms that support it
+      ...(process.platform !== 'win32' ? { reusePort: true } : {})
+    }, () => {
+      log(`Server running in ${process.env.NODE_ENV || 'development'} mode`);
+      log(`Listening on ${host}:${port}`);
+    });
+  } catch (error) {
+    console.error('Error starting server:', error);
+    
+    if (host === '0.0.0.0' && process.platform === 'win32') {
+      console.log('\nTrying alternative configuration for Windows...');
+      // On Windows, fallback to localhost if 0.0.0.0 fails
+      server.listen(Number(port), 'localhost', () => {
+        log(`Server running in ${process.env.NODE_ENV || 'development'} mode`);
+        log(`Listening on localhost:${port}`);
+      });
+    } else {
+      // Re-throw for other errors
+      throw error;
+    }
+  }
 })();

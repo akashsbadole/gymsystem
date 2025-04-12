@@ -80,7 +80,7 @@ export default function Dashboard() {
             <StatsCard
               icon={<Users strokeWidth={2} />}
               title="Total Members"
-              value={dashboardData.stats.totalMembers}
+              value={dashboardData?.stats?.totalMembers || 0}
               iconBgColor="bg-primary-100"
               iconColor="text-primary-600"
               link={{ href: "/members", text: "View all" }}
@@ -88,7 +88,7 @@ export default function Dashboard() {
             <StatsCard
               icon={<CreditCard strokeWidth={2} />}
               title="Monthly Revenue"
-              value={`₹${dashboardData.stats.monthlyRevenue.toLocaleString('en-IN')}`}
+              value={`₹${(dashboardData?.stats?.monthlyRevenue || 0).toLocaleString('en-IN')}`}
               iconBgColor="bg-secondary-100"
               iconColor="text-secondary-600"
               link={{ href: "/reports", text: "View report" }}
@@ -96,7 +96,7 @@ export default function Dashboard() {
             <StatsCard
               icon={<TrendingUp strokeWidth={2} />}
               title="Active Memberships"
-              value={dashboardData.stats.activeMembers}
+              value={dashboardData?.stats?.activeMembers || 0}
               iconBgColor="bg-accent-100"
               iconColor="text-accent-600"
               link={{ href: "/members", text: "View details" }}
@@ -104,7 +104,7 @@ export default function Dashboard() {
             <StatsCard
               icon={<Clock strokeWidth={2} />}
               title="Expiring This Week"
-              value={dashboardData.stats.expiringThisWeek}
+              value={dashboardData?.stats?.expiringThisWeek || 0}
               iconBgColor="bg-red-100"
               iconColor="text-red-600"
               link={{ 
@@ -117,21 +117,21 @@ export default function Dashboard() {
 
           <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
             <RevenueChart 
-              monthlyData={dashboardData.monthlyRevenue} 
+              monthlyData={dashboardData?.monthlyRevenue || []} 
               yearlyData={[]} 
             />
             <MembershipChart 
-              data={dashboardData.membershipDistribution} 
+              data={dashboardData?.membershipDistribution || []} 
             />
           </div>
 
           <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
             <RecentPayments 
               className="lg:col-span-2" 
-              payments={dashboardData.recentPayments} 
+              payments={dashboardData?.recentPayments || []} 
             />
             <NotificationsList 
-              expiring={dashboardData.expiring} 
+              expiring={dashboardData?.expiring || []} 
             />
           </div>
         </>
