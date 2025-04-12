@@ -1,11 +1,34 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import path from "path";
+
+// Environment configuration
+const isDevelopment = process.env.NODE_ENV === 'development';
+const isProduction = process.env.NODE_ENV === 'production';
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Set trust proxy for production environments
+if (isProduction) {
+  app.set('trust proxy', 1);
+}
+
+// Add security headers for production
+if (isProduction) {
+  app.use((req, res, next) => {
+    res.set({
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'X-XSS-Protection': '1; mode=block'
+    });
+    next();
+  });
+}
+
+// Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -39,32 +62,49 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
+  // Error handling middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    
+    // Only show detailed error messages in development
+    const message = isDevelopment 
+      ? err.message || "Internal Server Error"
+      : "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
+    
+    // Log the error
+    console.error(err);
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
+  // Setup frontend serving based on environment
+  if (isDevelopment) {
+    // In development, use Vite dev server
     await setupVite(app, server);
   } else {
-    serveStatic(app);
+    // In production, serve static files and handle SPA routing
+    const clientBuildPath = path.resolve(process.cwd(), 'dist/client');
+    app.use(express.static(clientBuildPath));
+    
+    // SPA fallback - serve index.html for all non-API routes
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api/')) {
+        return next();
+      }
+      res.sendFile(path.join(clientBuildPath, 'index.html'));
+    });
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
+  // Get port from environment variable or use default
+  const port = process.env.PORT || 5000;
+  
+  // Listen on all interfaces
   server.listen({
-    port,
+    port: Number(port),
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`Server running in ${process.env.NODE_ENV || 'development'} mode`);
+    log(`Listening on port ${port}`);
   });
 })();
