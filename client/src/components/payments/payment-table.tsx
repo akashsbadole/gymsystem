@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -40,11 +40,31 @@ interface PaymentTableProps {
   payments: any[];
 }
 
-export function PaymentTable({ payments }: PaymentTableProps) {
+export function PaymentTable({ payments = [] }: PaymentTableProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<any | null>(null);
   const [members, setMembers] = useState<any[]>([]);
+  const [validPayments, setValidPayments] = useState<any[]>([]);
   const { toast } = useToast();
+  
+  // Validate payments before rendering
+  useEffect(() => {
+    if (!Array.isArray(payments)) {
+      console.error('PaymentTable received non-array data:', payments);
+      setValidPayments([]);
+      return;
+    }
+    
+    const filtered = payments.filter(payment => 
+      payment && 
+      typeof payment === 'object' && 
+      'amount' in payment &&
+      'paymentDate' in payment
+    );
+    
+    console.log(`Payment validation: ${filtered.length} valid out of ${payments.length}`);
+    setValidPayments(filtered);
+  }, [payments]);
 
   // Delete payment mutation
   const deletePaymentMutation = useMutation({
@@ -125,16 +145,25 @@ export function PaymentTable({ payments }: PaymentTableProps) {
     return `₹${amount.toLocaleString('en-IN')}`;
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'paid':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Paid</Badge>;
-      case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pending</Badge>;
-      case 'failed':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Failed</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+  const getStatusBadge = (status: string | null | undefined) => {
+    if (!status) {
+      return <Badge variant="outline">Unknown</Badge>;
+    }
+    
+    try {
+      switch (status.toLowerCase()) {
+        case 'paid':
+          return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Paid</Badge>;
+        case 'pending':
+          return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pending</Badge>;
+        case 'failed':
+          return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Failed</Badge>;
+        default:
+          return <Badge variant="outline">{status}</Badge>;
+      }
+    } catch (error) {
+      console.error("Invalid status:", status, error);
+      return <Badge variant="outline">Unknown</Badge>;
     }
   };
 
@@ -154,8 +183,8 @@ export function PaymentTable({ payments }: PaymentTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {payments.length > 0 ? (
-              payments.map((payment) => (
+            {validPayments.length > 0 ? (
+              validPayments.map((payment) => (
                 <TableRow key={payment.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center">
@@ -252,7 +281,9 @@ export function PaymentTable({ payments }: PaymentTableProps) {
             ) : (
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center">
-                  No payment records found. Record a payment to get started.
+                  {Array.isArray(payments) && payments.length > 0 
+                    ? "No valid payment records found. The data format may be incorrect."
+                    : "No payment records found. Record a payment to get started."}
                 </TableCell>
               </TableRow>
             )}

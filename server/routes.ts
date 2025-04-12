@@ -341,8 +341,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Unauthorized" });
       }
       
-      const payments = await storage.getPaymentsByGymId(parseInt(req.params.gymId));
-      res.json(payments);
+      try {
+        const payments = await storage.getPaymentsByGymId(parseInt(req.params.gymId));
+        // Debug the payments data
+        console.log(`Found ${payments?.length || 0} payments for gym ${req.params.gymId}`);
+        res.json(payments);
+      } catch (paymentError) {
+        console.error('Error fetching payments:', paymentError);
+        res.status(500).json({ message: "Failed to fetch payments", error: paymentError.message });
+      }
     } catch (error) {
       next(error);
     }
