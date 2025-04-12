@@ -105,11 +105,23 @@ export function PaymentTable({ payments }: PaymentTableProps) {
     updateStatusMutation.mutate({ id, status: newStatus });
   };
 
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "dd MMM yyyy, h:mm a");
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) {
+      return 'N/A';
+    }
+    
+    try {
+      return format(new Date(dateString), "dd MMM yyyy, h:mm a");
+    } catch (error) {
+      console.error("Invalid date:", dateString, error);
+      return 'Invalid date';
+    }
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | undefined | null) => {
+    if (amount === undefined || amount === null) {
+      return '₹0';
+    }
     return `₹${amount.toLocaleString('en-IN')}`;
   };
 

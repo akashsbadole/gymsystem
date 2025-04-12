@@ -27,10 +27,14 @@ interface RevenueChartProps {
 export function RevenueChart({ monthlyData = [], yearlyData = [], className }: RevenueChartProps) {
   const [view, setView] = useState<'monthly' | 'yearly'>('monthly');
   
-  const data = view === 'monthly' ? monthlyData : yearlyData;
+  // Ensure data is an array
+  const safeMonthlyData = Array.isArray(monthlyData) ? monthlyData : [];
+  const safeYearlyData = Array.isArray(yearlyData) ? yearlyData : [];
+  
+  const data = view === 'monthly' ? safeMonthlyData : safeYearlyData;
   
   // Calculate statistics
-  const totalRevenue = data.reduce((sum, item) => sum + item.amount, 0);
+  const totalRevenue = data.reduce((sum, item) => sum + (item?.amount || 0), 0);
   const average = data.length > 0 ? totalRevenue / data.length : 0;
   
   // Calculate growth (comparing last period to the period before)

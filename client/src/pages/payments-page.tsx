@@ -42,8 +42,16 @@ export default function PaymentsPage() {
     enabled: !!currentGymId,
   });
 
+  // Debug the payment data
+  if (payments) {
+    console.log('Payments data:', JSON.stringify(payments, null, 2));
+  }
+  
   // Filter payments based on search, status, and date range
   const filteredPayments = payments?.filter((payment) => {
+    // Skip invalid payment objects
+    if (!payment) return false;
+    
     const matchesSearch =
       searchTerm === "" ||
       payment.reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -51,10 +59,19 @@ export default function PaymentsPage() {
       
     const matchesStatus = statusFilter === "all" || payment.status === statusFilter;
     
-    const paymentDate = new Date(payment.paymentDate);
+    // Safely create date object
+    let paymentDate;
+    try {
+      paymentDate = payment.paymentDate ? new Date(payment.paymentDate) : null;
+    } catch (e) {
+      console.error("Invalid date format:", payment.paymentDate);
+      paymentDate = null;
+    }
+    
     const matchesDateRange = 
-      (!startDate || paymentDate >= startDate) &&
-      (!endDate || paymentDate <= endDate);
+      !paymentDate || 
+      ((!startDate || paymentDate >= startDate) &&
+       (!endDate || paymentDate <= endDate));
       
     return matchesSearch && matchesStatus && matchesDateRange;
   });

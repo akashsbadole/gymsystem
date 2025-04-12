@@ -20,17 +20,20 @@ const TYPE_LABELS = {
   'annual': 'Annual Plan'
 };
 
-export function MembershipChart({ data, className }: MembershipChartProps) {
+export function MembershipChart({ data = [], className }: MembershipChartProps) {
   const [location, setLocation] = useState('all');
   
+  // Ensure data is an array
+  const safeData = Array.isArray(data) ? data : [];
+  
   // Calculate total
-  const totalMembers = data.reduce((sum, item) => sum + item.count, 0);
+  const totalMembers = safeData.reduce((sum, item) => sum + (item?.count || 0), 0);
   
   // For visual presentation, convert raw data to chart data with percentages
-  const chartData = data.map((item, index) => ({
-    name: TYPE_LABELS[item.type as keyof typeof TYPE_LABELS] || item.type,
-    value: item.count,
-    percentage: totalMembers > 0 ? Math.round((item.count / totalMembers) * 100) : 0,
+  const chartData = safeData.map((item, index) => ({
+    name: TYPE_LABELS[(item?.type || 'monthly') as keyof typeof TYPE_LABELS] || item?.type || 'Unknown',
+    value: item?.count || 0,
+    percentage: totalMembers > 0 ? Math.round(((item?.count || 0) / totalMembers) * 100) : 0,
     color: COLORS[index % COLORS.length]
   }));
 
